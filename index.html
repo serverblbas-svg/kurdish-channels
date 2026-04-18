@@ -1,46 +1,216 @@
 <!DOCTYPE html>
-<html lang="ku">
+<html lang="ku" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>yariga_spi sports</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>beIN Sports - SPITV4K</title>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
     <style>
-        body {
-            font-family: Arial;
-            background: #111;
-            color: white;
-            text-align: center;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #0b0e11 0%, #1a1f25 100%); 
+            color: white; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
         }
-        h1 {
-            color: #00ffcc;
+        .container { width: 95%; max-width: 1200px; margin: 20px auto; padding: 10px; }
+        
+        .main-header {
+            text-align: center; padding: 15px; margin-bottom: 20px;
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            border-radius: 12px; box-shadow: 0 4px 20px rgba(37, 117, 252, 0.4);
         }
-        .channel {
-            background: #222;
-            margin: 10px auto;
-            padding: 15px;
-            width: 300px;
-            border-radius: 10px;
-            cursor: pointer;
+        .main-header h1 { font-size: 1.5rem; font-weight: bold; }
+        .main-header img { width: 40px; vertical-align: middle; margin-left: 8px; }
+        
+        .player-section { 
+            background: #000; border-radius: 15px; overflow: hidden; 
+            border: 2px solid #6a11cb; margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(106, 17, 203, 0.3);
         }
-        .channel:hover {
-            background: #333;
+        .header-title { 
+            background: linear-gradient(90deg, #6a11cb, #2575fc); 
+            color: #fff; padding: 12px 15px; text-align: center; 
+            font-weight: bold; font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .live-indicator { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; }
+        .live-dot { 
+            width: 10px; height: 10px; background: #ff4b2b; border-radius: 50%; 
+            animation: blink 1s infinite; box-shadow: 0 0 10px #ff4b2b;
+        }
+        @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.9)} }
+        
+        .video-js { width: 100%; height: auto; min-height: 250px; background: #000; }
+        
+        .channels-wrapper {
+            background: rgba(26, 29, 33, 0.95); border-radius: 15px; padding: 15px;
+            border: 1px solid #333; max-height: 500px; overflow-y: auto;
+        }
+        .channels-wrapper::-webkit-scrollbar { width: 8px; }
+        .channels-wrapper::-webkit-scrollbar-track { background: #1a1f25; border-radius: 10px; }
+        .channels-wrapper::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, #6a11cb, #2575fc); border-radius: 10px;
+        }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+        
+        .btn {
+            background: linear-gradient(145deg, #252a30, #1e2328);
+            border: 1px solid #444; color: white; padding: 12px 10px; 
+            border-radius: 10px; cursor: pointer; text-align: center; 
+            font-size: 0.8rem; transition: all 0.25s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 70px; position: relative; overflow: hidden;
+        }
+        .btn::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, #6a11cb, #2575fc); opacity: 0; transition: 0.2s;
+        }
+        .btn:hover { 
+            background: linear-gradient(145deg, #6a11cb, #2575fc); 
+            color: #fff; border-color: #fff; transform: translateY(-3px); 
+            box-shadow: 0 5px 20px rgba(106, 17, 203, 0.5); font-weight: 600;
+        }
+        .btn:hover::before { opacity: 1; }
+        .btn.active { 
+            background: linear-gradient(145deg, #6a11cb, #2575fc); 
+            color: #fff; border: 2px solid #fff; transform: scale(1.03);
+            box-shadow: 0 0 25px rgba(106, 17, 203, 0.7); font-weight: bold;
+        }
+        .btn-quality {
+            font-size: 0.7rem; color: #aaa; margin-top: 4px;
+            background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;
+        }
+        .btn.active .btn-quality { color: #fff; background: rgba(0,0,0,0.2); }
+        
+        .error-msg {
+            background: rgba(255, 75, 43, 0.2); border: 1px solid #ff4b2b;
+            color: #ff6b55; padding: 10px 15px; border-radius: 8px;
+            margin: 10px; text-align: center; display: none;
+        }
+        .loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #6a11cb; font-size: 1rem; display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+            .btn { padding: 10px 8px; min-height: 60px; font-size: 0.75rem; }
+            .main-header h1 { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
 
-<h1>yariga_spi sports</h1>
+<div class="container">
+    <div class="main-header">
+        <h1><img src="https://raw.githubusercontent.com/kamalblbas/logo/main/bein.png" alt="beIN"> beIN Sports - PREMIUM</h1>
+    </div>
+    
+    <div class="player-section">
+        <div class="header-title">
+            <span id="ch-name">🔴 هەڵبژاردنی کەناڵ</span>
+            <span class="live-indicator"><span class="live-dot"></span> LIVE</span>
+        </div>
+        <div class="error-msg" id="error-msg">⚠️ هەڵە لە بارکردنی ڤیدیۆ</div>
+        <div class="loading" id="loading">⏳ چاوەڕێ بە...</div>
+        <video id="main-video" class="video-js vjs-default-skin vjs-16-9" controls preload="metadata" muted></video>
+    </div>
+    
+    <div class="channels-wrapper">
+        <div class="grid" id="channel-grid"></div>
+    </div>
+</div>
 
-<div class="http://a83967.xyz:8080/971424234/942337642/288315">1. Alwan Sport 1 4K</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/288311">2. Alwan Sport 2 HD</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/288308">3. Alwan Sport 3 HD</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/288304">4. Alwan Sport 4 SD</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/288302">5. Alwan Sport 5 HD</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/384822">6. Alwan UFC 4K</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/384827">7. Alwan F1 4K</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/288320">8. Alwan Aflam 1 4K</div>
-<div class="https://www2.0zz0.com/2025/07/31/18/634191496.png">9. Alwan Aflam 3 4K</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/384818">10. Alwan Mosalsalat+ 4K</div>
-<div class="http://a83967.xyz:8080/971424234/942337642/288301">11. Alwan Sport 5 SD</div>
+<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+<script>
+    // 📺 تەنها کەناڵەکانی beIN Sports
+    const channels = [
+        { name:"spi_quran hd", url:"https://live20.bozztv.com/giatv/giatv-spi_quran_hd/spi_quran_hd/chunks.m3u8", quality:"HD" },
+        { name:"dekanquran", url:"https://live20.bozztv.com/giatv/giatv-dekanquran/dekanquran/chunks.m3u8", quality:"HD" },
+        { name:"spitv4k", url:"https://live20.bozztv.com/giatv/giatv-spitv4k_kamalblbas/spitv4k_kamalblbas/chunks.m3u8", quality:"HD" },
+        { name:"spi_sports_hd", url:"https://live20.bozztv.com/giatv/giatv-spi_sports_hd/spi_sports_hd/chunks.m3u8", quality:"HD" },
 
+        // 🔥 BEIN 4K
+        { name:"BEIN NEWS 4K", url:"http://a83967.xyz:8080/971424234/942337642/375047", quality:"4K" },
+        { name:"BEIN ULTRA 4K", url:"http://a83967.xyz:8080/971424234/942337642/464382", quality:"4K" },
+        { name:"BEIN 2 4K", url:"http://a83967.xyz:8080/971424234/942337642/219719", quality:"4K" },
+        { name:"BEIN 3 4K", url:"http://a83967.xyz:8080/971424234/942337642/129372", quality:"4K" },
+        { name:"BEIN 5 4K", url:"http://a83967.xyz:8080/971424234/942337642/129374", quality:"4K" },
+        { name:"BEIN 7 4K", url:"http://a83967.xyz:8080/971424234/942337642/375051", quality:"4K" },
+        { name:"BEIN 8 4K", url:"http://a83967.xyz:8080/971424234/942337642/375050", quality:"4K" },
+
+        // 🔥 BEIN HD
+        { name:"Bein 1 HD", url:"http://a83967.xyz:8080/971424234/942337642/124234", quality:"HD" },
+        { name:"Bein 2 HD", url:"http://a83967.xyz:8080/971424234/942337642/219728", quality:"HD" },
+        { name:"Bein 3 HD", url:"http://a83967.xyz:8080/971424234/942337642/380478", quality:"HD" },
+        { name:"Bein 4 HD", url:"http://a83967.xyz:8080/971424234/942337642/247201", quality:"HD" },
+        { name:"Bein 9 HD", url:"http://a83967.xyz:8080/971424234/942337642/124242", quality:"HD" },
+
+        // 🔥 SD
+        { name:"Bein 3 SD", url:"http://a83967.xyz:8080/971424234/942337642/247209", quality:"SD" },
+        { name:"Bein 4 SD", url:"http://a83967.xyz:8080/971424234/942337642/219739", quality:"SD" },
+        { name:"Bein 7 SD", url:"http://a83967.xyz:8080/971424234/942337642/384168", quality:"SD" },
+
+        // 🔥 ALWAN
+        { name:"Alwan Sport 1 4K", url:"http://a83967.xyz:8080/971424234/942337642/288315", quality:"4K" },
+        { name:"Alwan Sport 2 HD", url:"http://a83967.xyz:8080/971424234/942337642/288311", quality:"HD" },
+        { name:"Alwan Sport 3 HD", url:"http://a83967.xyz:8080/971424234/942337642/288308", quality:"HD" },
+        { name:"Alwan UFC 4K", url:"http://a83967.xyz:8080/971424234/942337642/384822", quality:"4K" },
+        { name:"Alwan F1 4K", url:"http://a83967.xyz:8080/971424234/942337642/384827", quality:"4K" }
+    ];
+
+    const player = videojs('main-video', {
+        html5: { hls: { overrideNative: true }, nativeAudioTracks: false, nativeVideoTracks: false },
+        fluid: true, aspectRatio: '16:9', controls: true, preload: 'metadata', muted: true, autoplay: false
+    });
+
+    const channelGrid = document.getElementById('channel-grid');
+    const chName = document.getElementById('ch-name');
+    const errorMsg = document.getElementById('error-msg');
+    const loading = document.getElementById('loading');
+
+    function renderChannels() {
+        channelGrid.innerHTML = '';
+        channels.forEach((channel, index) => {
+            const btn = document.createElement('div');
+            btn.className = 'btn';
+            btn.innerHTML = `${channel.name}<span class="btn-quality">${channel.quality}</span>`;
+            btn.onclick = () => playChannel(channel, btn);
+            channelGrid.appendChild(btn);
+        });
+    }
+
+    function playChannel(channel, btnElement) {
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+        chName.innerHTML = `🔴 ${channel.name}`;
+        errorMsg.style.display = 'none';
+        loading.style.display = 'block';
+        
+        try {
+            player.src({ src: channel.url, type: 'application/x-mpegURL' });
+            player.play().catch(e => {
+                errorMsg.textContent = '⚠️ تکایە کلیک لەسەر پلەیر بکە';
+                errorMsg.style.display = 'block';
+            });
+        } catch (err) {
+            errorMsg.textContent = '⚠️ نەتوانرا کەناڵەکە بکرێتەوە';
+            errorMsg.style.display = 'block';
+        } finally { loading.style.display = 'none'; }
+    }
+
+    player.on('error', () => {
+        errorMsg.textContent = '⚠️ هەڵە لە بارکردنی ڤیدیۆ';
+        errorMsg.style.display = 'block'; loading.style.display = 'none';
+    });
+    player.on('playing', () => errorMsg.style.display = 'none');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderChannels();
+        if (channels.length > 0) playChannel(channels[0], document.querySelector('.btn'));
+    });
+</script>
 </body>
 </html>
