@@ -14,6 +14,54 @@
             min-height: 100vh;
             color: #fff;
             padding: 20px;
+            transition: all 0.3s ease;
+        }
+        body.fullscreen-active {
+            padding: 0;
+            overflow: hidden;
+        }
+        body.fullscreen-active .app-container {
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
+            max-width: 100%;
+            height: 100vh;
+        }
+        body.fullscreen-active .header,
+        body.fullscreen-active .filters,
+        body.fullscreen-active .channels-grid,
+        body.fullscreen-active .player-footer .live-badge,
+        body.fullscreen-active .player-footer .now-playing i {
+            display: none;
+        }
+        body.fullscreen-active .player-area {
+            margin-bottom: 0;
+            border-radius: 0;
+            height: 100vh;
+        }
+        body.fullscreen-active #videoPlayer {
+            height: 100vh;
+            aspect-ratio: unset;
+        }
+        body.fullscreen-active .player-footer {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 50px;
+            padding: 8px 20px;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            display: flex;
+            z-index: 1000;
+        }
+        body.fullscreen-active .player-footer .now-playing {
+            font-size: 0.9rem;
+        }
+        body.fullscreen-active .player-footer .live-badge {
+            display: inline-block;
+            margin-right: 10px;
         }
         .app-container {
             max-width: 1600px;
@@ -24,6 +72,7 @@
             padding: 24px;
             border: 1px solid rgba(255, 255, 255, 0.15);
             box-shadow: 0 30px 50px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
         }
         .header { text-align: center; margin-bottom: 30px; position: relative; }
         .logo {
@@ -54,12 +103,29 @@
             font-size: 1rem;
             backdrop-filter: blur(5px);
         }
+        .fullscreen-btn {
+            position: absolute;
+            right: 20px;
+            top: 0;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 40px;
+            padding: 8px 16px;
+            cursor: pointer;
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(5px);
+        }
+        .fullscreen-btn:hover, .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
         .player-area {
             background: #000;
             border-radius: 32px;
             overflow: hidden;
             margin-bottom: 35px;
             border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
         }
         #videoPlayer {
             width: 100%;
@@ -184,12 +250,32 @@
             .channels-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
             .channel-name { font-size: 0.75rem; }
         }
+        .exit-fullscreen-hint {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            z-index: 1001;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        body.fullscreen-active .exit-fullscreen-hint {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
 <div class="app-container">
     <div class="header">
         <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i> ڕووناک/تاریک</button>
+        <button class="fullscreen-btn" id="exitFullscreenBtn" style="display:none;"><i class="fas fa-compress"></i> دەرچوون لە شاشەی پڕ</button>
         <div class="logo">kurdish <span>channels</span></div>
         <div class="sub">١٦١ کەناڵ | پەخشی ڕاستەوخۆ</div>
     </div>
@@ -216,10 +302,11 @@
 
     <div class="channels-grid" id="channelsGrid"></div>
 </div>
+<div class="exit-fullscreen-hint" id="exitHint">⛶ لە شاشەی پڕدا - کلیک لەسەر ڤیدیۆ بکە بۆ دەرچوون یان دەست لە کیبۆرد بکە بە ESC</div>
 
 <script>
-    // ==================== 161 کەناڵەکەت ====================
-    const allChannels = [
+    // ==================== 161 کەناڵەکەت بە تەواوی ====================
+    const allChannelsData = [
         { name: "ESRA TV 1", logo: "https://logo.m3uassets.com/pesrayatv.png", group: "KURDISH", url: "https://live20.bozztv.com/giatv/giatv-ESRAHD/ESRAHD/chunks.m3u8" },
         { name: "ESRA TV 2", logo: "https://logo.m3uassets.com/pesrayatv.png", group: "KURDISH", url: "https://live20.bozztv.com/giatv/giatv-esra2hd_kamalblbas/esra2hd_kamalblbas/chunks.m3u8" },
         { name: "spi kids 4k", logo: "https://logo.m3uassets.com/id.png", group: "KURDISH", url: "https://live20.bozztv.com/giatv/giatv-spikids4k2025/spikids4k2025/chunks.m3u8" },
@@ -349,7 +436,7 @@
         { name: "ZooMoo", logo: "https://logo.m3uassets.com/zoomoo.png", group: "kids hd", url: "https://stream-us-east-1.getpublica.com/playlist.m3u8?network_id=60" },
         { name: "TG Junior Kids", logo: "https://logo.m3uassets.com/tgjunior.png", group: "kids hd", url: "https://stream-us-east-1.getpublica.com/playlist.m3u8?network_id=31" },
         { name: "Amou Yazid TV", logo: "https://logo.m3uassets.com/amouyazidtv.png", group: "kids hd", url: "http://mkstream.servehttp.com:1940/AmouYazid/ay1/chunklist.m3u8" },
-        { name: "Mr.Bean", logo: "https://logo.m3uassets.com/mrbean.png", group: "kids hd", url: "https://amg00627-amg00627c30-rakuten-es-3990.playouts.now.amagi.tv/playlist/amg00627-banijayfast-mrbeanescc-rakutenes/playlist.m3u8" },
+        { name: "Mr.Bean [ʀᴀkυᴛᴇɴ]", logo: "https://logo.m3uassets.com/mrbean.png", group: "kids hd", url: "https://amg00627-amg00627c30-rakuten-es-3990.playouts.now.amagi.tv/playlist/amg00627-banijayfast-mrbeanescc-rakutenes/playlist.m3u8" },
         { name: "Léo e Lully", logo: "https://logo.m3uassets.com/e.png", group: "kids hd", url: "https://cdn-3.nxplay.com.br/LEO_E_LULLY/tracks-v1a1/mono.m3u8" },
         { name: "TVG Xabarin", logo: "https://logo.m3uassets.com/a.png", group: "kids hd", url: "https://crtvg-infantil-schlive.flumotion.cloud/crtvglive/smil:channel5PRG.smil/playlist.m3u8" },
         { name: "Barbie and Friends", logo: "https://logo.m3uassets.com/a.png", group: "kids hd", url: "https://d1xqdnwy1bo05f.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-jh1ol665g3amg/barb.m3u8" },
@@ -384,7 +471,10 @@
     // ==================== کۆدی سەرەکی ====================
     let currentHls = null;
     let activeChannelIndex = -1;
+    let isFullscreen = false;
     const video = document.getElementById('videoPlayer');
+    const appContainer = document.querySelector('.app-container');
+    const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
 
     function populateCategories() {
         const cats = [...new Set(allChannels.map(ch => ch.group || "گشتی"))];
@@ -433,7 +523,42 @@
         document.getElementById('stats').innerHTML = `📡 ${filtered.length} / ${allChannels.length} کەناڵ`;
     }
 
-    function playChannelByIndex(index) {
+    function enterFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+        }
+        isFullscreen = true;
+        document.body.classList.add('fullscreen-active');
+        exitFullscreenBtn.style.display = 'block';
+    }
+
+    function exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+        isFullscreen = false;
+        document.body.classList.remove('fullscreen-active');
+        exitFullscreenBtn.style.display = 'none';
+    }
+
+    function toggleFullscreen() {
+        if (!isFullscreen) {
+            enterFullscreen();
+        } else {
+            exitFullscreen();
+        }
+    }
+
+    function playChannelByIndex(index, goFullscreen = true) {
         if (index < 0 || index >= allChannels.length) return;
         const ch = allChannels[index];
         if (!ch.url) return;
@@ -448,15 +573,47 @@
             currentHls = new Hls({ capLevelToPlayerSize: true });
             currentHls.attachMedia(video);
             currentHls.loadSource(ch.url);
-            currentHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e=>console.log));
+            currentHls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(e => console.log(e));
+                if (goFullscreen && !isFullscreen) {
+                    setTimeout(() => enterFullscreen(), 500);
+                }
+            });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = ch.url;
-            video.play().catch(e=>console.log);
+            video.play().catch(e => console.log(e));
+            if (goFullscreen && !isFullscreen) {
+                setTimeout(() => enterFullscreen(), 500);
+            }
         } else {
             alert('براوسەرەکەت پشتیوانی پەخشی زیندوو ناکات');
         }
         renderChannels();
     }
+
+    // گوێگر بۆ گۆڕانی شاشەی پڕ لە ڕێگەی ESC
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            isFullscreen = false;
+            document.body.classList.remove('fullscreen-active');
+            exitFullscreenBtn.style.display = 'none';
+        } else {
+            isFullscreen = true;
+            document.body.classList.add('fullscreen-active');
+            exitFullscreenBtn.style.display = 'block';
+        }
+    });
+
+    // کلیک لەسەر ڤیدیۆ بۆ دەرچوون لە شاشەی پڕ
+    video.addEventListener('click', () => {
+        if (isFullscreen) {
+            exitFullscreen();
+        }
+    });
+
+    exitFullscreenBtn.addEventListener('click', () => {
+        exitFullscreen();
+    });
 
     document.getElementById('searchInput').addEventListener('input', () => renderChannels());
     document.getElementById('categorySelect').addEventListener('change', () => renderChannels());
